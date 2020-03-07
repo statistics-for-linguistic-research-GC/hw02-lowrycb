@@ -1,0 +1,69 @@
+---
+title: "hw02-lowrycb"
+author: "Cass Lowry"
+date: "3/7/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(ggplot2)
+```
+
+## 1 Reporting a binomial test
+
+``` {r}
+prep <- 501
+dobj <- 1859
+n <- prep + dobj
+
+p <- dobj / n
+odds.ratio <- p / (1-p)
+odds.ratio
+
+binom.test(dobj, n, p = .5, alternative = "two.sided")
+
+```
+
+We tested whether the double object dative and prepositional dative occured with equal probability for a given corpus of spoken American English. Using a corpus collected by Bresnan et al. (2007), we found that out of 2,360 ditransitive sentences, 501 featured the prepositional dative construction and 1,859 had the double object form. An exact binomial test showed that the two dative constructions were not equiprobable (*p*<.001, p = 0.788, 95% CI [0.771, 0.804]). The odds that a ditransitive sentence was produced in the double object construction instead of the prepositional dative were about 3.7 to one.
+
+### Stretch goal
+
+``` {r}
+num_dobj <- c(0:n)
+proportion <- sapply(num_dobj, dbinom, n, .5)
+df <- data.frame(cbind(num_dobj, proportion))
+
+p <- ggplot(df, aes(x=num_dobj, y=proportion)) +
+  geom_bar(stat="identity") + 
+  xlim(460, 1900) +
+  geom_vline(xintercept = 1859, color = "red") +
+  ggtitle("Distribution of double object datives given null hypothesis, p = 0.5") +
+  xlab("Number of double object datives") +
+  ylab("Proportion")
+plot(p)
+```
+
+The above bar graph displays the proportion of times that a given number of double object datives would be observed in a corpus assuming the null hypothesis that both double object and prepositional dative constructions are equipropable. The verticle red line marks the observed count of double object datives in the Bresnan et al. (2007) corpus.
+
+*Note: the stretch goal was to do this using the function hist(). I don't know how one would present the results of dbinom() for varying values of x using a histogram, which graphs a single variable.*
+
+## 2 McNemar’s test
+``` {r}
+df <- read.table("~/Dropbox/CUNY/Stats/hw/hw02-lowrycb/PTB.tsv", header = TRUE, sep = "\t", comment.char = "")
+
+df$Stanford.corr <- df$Stanford.tag == df$gold.tag
+df$NLP4J.corr <- df$NLP4J.tag == df$gold.tag
+
+stanford_wins <- sum(df$Stanford.corr & !df$NLP4J.corr)
+stanford_wins
+
+NLP4J_wins <- sum(df$NLP4J.corr & !df$Stanford.corr)
+NLP4J_wins
+
+n = stanford_wins + NLP4J_wins
+
+binom.test(NLP4J_wins, n, p = .5, alternative = "two.sided")
+```
+
+The Stanford tagger outperformed the NLP4J tagger a total of 943 times. The NLP4J tagger outperformed the Stanford tagger 1016 times. Applying an exact binomial test to these numbers of wins (McNemar's test), we see that this result is consistent with the null hypothesis that the two taggers are comparable in performance (*p*=.104, p = 0.519, 95% CI [0.496, 0.541]).
